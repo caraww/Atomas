@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0f1720" />
+    <title>Atom Ring</title>
+    <style>
+      :root {
+        --bg: #0f1720;
+        --bg-deep: #070b10;
+        --paper: rgba(255, 255, 255, 0.08);
+        --paper-strong: rgba(255, 255, 255, 0.14);
+        --text: #f7f0df;
+        --muted: #a9b4ba;
+        --gold: #f0bc5e;
+        --teal: #69dbc8;
+        --red: #ff705e;
+        --blue: #7aa7ff;
+        --green: #9ce06d;
+        --shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+        --safe-top: env(safe-area-inset-top, 0px);
+        --safe-bottom: env(safe-area-inset-bottom, 0px);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+      }
+
+      body {
+        margin: 0;
+        color: var(--text);
+        font-family:
+          Avenir Next,
+          Trebuchet MS,
+          Verdana,
+          sans-serif;
+        background:
+          radial-gradient(
+            circle at 20% 6%,
+            rgba(240, 188, 94, 0.25),
+            transparent 34%
+          ),
+          radial-gradient(
+            circle at 86% 18%,
+            rgba(105, 219, 200, 0.18),
+            transparent 30%
+          ),
+          linear-gradient(
+            160deg,
+            #18212b 0%,
+            var(--bg) 52%,
+            var(--bg-deep) 100%
+          );
+        overflow: hidden;
+        touch-action: manipulation;
+        user-select: none;
+      }
+
+      button {
+        border: 0;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .app {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        width: min(100vw, 520px);
+        height: 100dvh;
+        margin: 0 auto;
+        padding: calc(16px + var(--safe-top)) 16px
+          calc(14px + var(--safe-bottom));
+      }
+
+      .topbar,
+      .stats,
+      .controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .eyebrow {
+        margin: 0 0 2px;
+        color: var(--gold);
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.8rem, 9vw, 3.2rem);
+        line-height: 0.9;
+        letter-spacing: -0.07em;
+      }
+
+      .icon-button {
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        border-radius: 18px;
+        background: var(--paper);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+        font-size: 1.7rem;
+      }
+
+      .stats {
+        align-items: stretch;
+      }
+
+      .stat-card {
+        flex: 1;
+        padding: 10px 12px;
+        border-radius: 18px;
+        background: var(--paper);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+      }
+
+      .stat-card span {
+        display: block;
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+
+      .stat-card strong {
+        display: block;
+        margin-top: 2px;
+        font-size: 1.35rem;
+      }
+
+      .board-wrap {
+        display: grid;
+        place-items: center;
+        flex: 1;
+        min-height: 310px;
+      }
+
+      .board {
+        position: relative;
+        width: min(92vw, 430px, 64dvh);
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background:
+          radial-gradient(
+            circle,
+            rgba(255, 255, 255, 0.08) 0 22%,
+            transparent 23%
+          ),
+          radial-gradient(circle, rgba(240, 188, 94, 0.12), transparent 58%);
+        box-shadow:
+          var(--shadow),
+          inset 0 0 80px rgba(255, 255, 255, 0.05);
+      }
+
+      .orbital {
+        position: absolute;
+        inset: 10%;
+        border: 1px dashed rgba(247, 240, 223, 0.18);
+        border-radius: 50%;
+        animation: spin 38s linear infinite;
+      }
+
+      .orbital-two {
+        inset: 19%;
+        border-style: solid;
+        opacity: 0.5;
+        animation-duration: 26s;
+        animation-direction: reverse;
+      }
+
+      .core {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        display: grid;
+        place-items: center;
+        gap: 8px;
+        width: 116px;
+        height: 116px;
+        padding: 14px;
+        border-radius: 36px;
+        background: rgba(7, 11, 16, 0.72);
+        box-shadow:
+          inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+          0 18px 45px rgba(0, 0, 0, 0.32);
+        transform: translate(-50%, -50%);
+        backdrop-filter: blur(18px);
+      }
+
+      .core span,
+      .core small {
+        color: var(--muted);
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .next-atom,
+      .atom {
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--atom-color, var(--gold));
+        color: #12100b;
+        font-weight: 900;
+        box-shadow:
+          0 12px 26px rgba(0, 0, 0, 0.28),
+          inset -8px -10px 18px rgba(0, 0, 0, 0.18),
+          inset 8px 8px 14px rgba(255, 255, 255, 0.32);
+      }
+
+      .next-atom {
+        width: 56px;
+        height: 56px;
+        font-size: 1.45rem;
+        transition: transform 0.1s ease;
+      }
+
+      .next-atom:active {
+        transform: scale(0.9);
+      }
+
+      .atom {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: clamp(42px, 12vw, 58px);
+        height: clamp(42px, 12vw, 58px);
+        font-size: clamp(1rem, 4vw, 1.35rem);
+        transform: translate(-50%, -50%) translate(var(--x), var(--y));
+        transition:
+          transform 280ms cubic-bezier(0.2, 0.9, 0.2, 1),
+          opacity 220ms ease,
+          filter 220ms ease;
+        z-index: 2;
+      }
+
+      .atom small {
+        display: block;
+        margin-top: -7px;
+        font-size: 0.48em;
+        opacity: 0.72;
+      }
+
+      .atom.plus,
+      .next-atom.plus {
+        --atom-color: #f6f1df;
+        color: #1b2530;
+      }
+
+      .atom.minus,
+      .next-atom.minus {
+        --atom-color: #ff705e;
+        color: white;
+      }
+
+      .atom.spawn {
+        animation: pop 360ms cubic-bezier(0.12, 1.45, 0.35, 1);
+      }
+      .atom.merge {
+        animation: fuse 390ms ease forwards;
+        z-index: 4;
+      }
+      .atom.chain {
+        filter: drop-shadow(0 0 18px rgba(240, 188, 94, 0.78));
+      }
+
+      .slot {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.03);
+        transform: translate(-50%, -50%) translate(var(--x), var(--y));
+        z-index: 3;
+      }
+
+      .slot::before {
+        content: "";
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: var(--teal);
+        box-shadow:
+          0 0 0 7px rgba(105, 219, 200, 0.12),
+          0 0 18px rgba(105, 219, 200, 0.72);
+        opacity: 0.8;
+        transition:
+          transform 160ms ease,
+          opacity 160ms ease;
+      }
+
+      .slot:active::before {
+        transform: scale(1.45);
+        opacity: 1;
+      }
+
+      .controls {
+        padding-top: 2px;
+      }
+
+      .power-button {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 54px;
+        padding: 12px 16px;
+        border-radius: 20px;
+        background: var(--paper-strong);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+        font-weight: 900;
+      }
+
+      .power-button:disabled {
+        opacity: 0.38;
+      }
+      .power-button strong {
+        color: var(--gold);
+        font-size: 1.35rem;
+      }
+
+      .rules {
+        margin-top: -2px;
+        padding: 0 4px;
+        color: var(--muted);
+        font-size: 0.82rem;
+        line-height: 1.35;
+        text-align: center;
+      }
+
+      .rules p {
+        margin: 0;
+      }
+      .rules b {
+        color: var(--text);
+      }
+
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: calc(18px + var(--safe-bottom));
+        max-width: min(88vw, 420px);
+        padding: 12px 16px;
+        border-radius: 999px;
+        background: rgba(247, 240, 223, 0.92);
+        color: #111820;
+        font-weight: 900;
+        opacity: 0;
+        transform: translate(-50%, 18px);
+        transition:
+          opacity 180ms ease,
+          transform 180ms ease;
+        pointer-events: none;
+        z-index: 20;
+      }
+
+      .toast.show {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes pop {
+        from {
+          transform: translate(-50%, -50%) translate(var(--x), var(--y))
+            scale(0.2);
+          opacity: 0;
+        }
+        to {
+          transform: translate(-50%, -50%) translate(var(--x), var(--y))
+            scale(1);
+          opacity: 1;
+        }
+      }
+      @keyframes fuse {
+        65% {
+          transform: translate(-50%, -50%) translate(var(--x), var(--y))
+            scale(1.22);
+          opacity: 1;
+        }
+        to {
+          transform: translate(-50%, -50%) translate(var(--x), var(--y))
+            scale(0.05);
+          opacity: 0;
+        }
+      }
+
+      @media (max-height: 690px) {
+        .app {
+          gap: 10px;
+          padding-top: calc(10px + var(--safe-top));
+        }
+        .rules {
+          display: none;
+        }
+        .board-wrap {
+          min-height: 280px;
+        }
+        h1 {
+          font-size: clamp(1.55rem, 8vw, 2.4rem);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app" aria-label="Atom Ring game">
+      <section class="topbar">
+        <div>
+          <p class="eyebrow">Atom Ring</p>
+          <h1>Build the core</h1>
+        </div>
+        <button
+          class="icon-button"
+          id="restartButton"
+          type="button"
+          aria-label="Restart game"
+        >
+          R
+        </button>
+      </section>
+
+      <section class="stats" aria-live="polite">
+        <div class="stat-card">
+          <span>Score</span>
+          <strong id="score">0</strong>
+        </div>
+        <div class="stat-card">
+          <span>Best</span>
+          <strong id="best">0</strong>
+        </div>
+        <div class="stat-card">
+          <span>Atoms</span>
+          <strong id="count">0</strong>
+        </div>
+      </section>
+
+      <section class="board-wrap">
+        <div
+          class="board"
+          id="board"
+          aria-label="Tap a glowing slot to place the next atom"
+        >
+          <div class="orbital orbital-one"></div>
+          <div class="orbital orbital-two"></div>
+          <div class="core">
+            <span>Next</span>
+            <button
+              class="next-atom"
+              id="nextAtom"
+              type="button"
+              aria-label="Next atom"
+            ></button>
+            <small id="hint">Tap a slot</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="controls">
+        <button class="power-button" id="minusButton" type="button">
+          <span>Minus</span>
+          <strong id="minusCount">0</strong>
+        </button>
+        <button class="power-button" id="shuffleButton" type="button">
+          <span>Shuffle</span>
+          <strong id="shuffleCount">0</strong>
+        </button>
+      </section>
+
+      <section class="rules">
+        <p>
+          Place numbers around the ring. Use <b>+</b> between matching atoms to
+          fuse them. Three equal neighbors also chain together.
+        </p>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script>
+      /* =========================================================
+               ATOM RING — GAME LOGIC
+               ========================================================= */
+
+      const ELEMENTS = [
+        "H",
+        "He",
+        "Li",
+        "Be",
+        "B",
+        "C",
+        "N",
+        "O",
+        "F",
+        "Ne",
+        "Na",
+        "Mg",
+        "Al",
+        "Si",
+        "P",
+        "S",
+        "Cl",
+        "Ar",
+        "K",
+        "Ca",
+      ];
+
+      const COLORS = [
+        "#f0bc5e",
+        "#69dbc8",
+        "#7aa7ff",
+        "#9ce06d",
+        "#ff9f6e",
+        "#d7ed6f",
+        "#82d8ff",
+        "#ff85a1",
+        "#c8a8ff",
+        "#f7f0df",
+      ];
+
+      const START_ATOMS = [1, 2, 1, 3, 2, 1];
+
+      const MAX_ATOMS = 18;
+      const FUSE_TIME = 410;
+      const MOVE_TIME = 300;
+
+      const $ = (s) => document.querySelector(s);
+
+      const board = $("#board");
+      const scoreEl = $("#score");
+      const bestEl = $("#best");
+      const countEl = $("#count");
+      const nextAtomEl = $("#nextAtom");
+      const hintEl = $("#hint");
+      const toastEl = $("#toast");
+
+      const minusButton = $("#minusButton");
+      const shuffleButton = $("#shuffleButton");
+
+      const minusCountEl = $("#minusCount");
+      const shuffleCountEl = $("#shuffleCount");
+
+      let state;
+      let toastTimer;
+
+      function boot() {
+        state = {
+          atoms: START_ATOMS.map((v, i) => ({ id: i + 1, value: v })),
+          nextId: START_ATOMS.length + 1,
+          next: null,
+          score: 0,
+          best: Number(localStorage.getItem("atom-ring-best") || 0),
+
+          minus: 1,
+          shuffle: 1,
+
+          locked: false,
+          mergingIds: new Set(),
+          spawnedId: null,
+          extracted: false, // Flag to track if the current 'next' atom was extracted
+        };
+
+        state.next = drawNextAtom();
+        render();
+      }
+
+      function atomLabel(v) {
+        if (v === "+" || v === "-") return v;
+        return ELEMENTS[v - 1] || String(v);
+      }
+
+      function atomColor(v) {
+        if (v === "+") return "#f7f0df";
+        if (v === "-") return "#ff705e";
+        return COLORS[(v - 1) % COLORS.length];
+      }
+
+      function drawNextAtom() {
+        const highest = Math.max(
+          ...state.atoms
+            .filter((a) => typeof a.value === "number")
+            .map((a) => a.value),
+          3,
+        );
+
+        const r = Math.random();
+
+        if (r < 0.18) return "+";
+        if (r < 0.22) return "-";
+
+        const cap = Math.max(3, Math.min(highest, 8));
+
+        return 1 + Math.floor(Math.random() * cap);
+      }
+
+      function render() {
+        board.querySelectorAll(".atom,.slot").forEach((n) => n.remove());
+
+        scoreEl.textContent = state.score;
+        bestEl.textContent = state.best;
+        countEl.textContent = state.atoms.length;
+
+        minusCountEl.textContent = state.minus;
+        shuffleCountEl.textContent = state.shuffle;
+
+        minusButton.disabled =
+          state.locked || state.minus <= 0 || state.atoms.length <= 0;
+
+        shuffleButton.disabled =
+          state.locked || state.shuffle <= 0 || state.atoms.length < 3;
+
+        // Update Hint text based on extraction state
+        if (state.locked) hintEl.textContent = "Fusing";
+        else if (state.extracted) hintEl.textContent = "Tap center for +";
+        else hintEl.textContent = "Tap a slot";
+
+        paintAtom(nextAtomEl, state.next);
+
+        const radius = board.clientWidth * 0.395;
+        const slotRadius = radius * 0.91;
+
+        const total = state.atoms.length;
+
+        state.atoms.forEach((atom, index) => {
+          const p = pointOnRing(index, total, radius);
+
+          const node = document.createElement("div");
+          node.className = "atom";
+
+          if (atom.value === "+") node.classList.add("plus");
+          if (atom.value === "-") node.classList.add("minus");
+
+          if (state.mergingIds.has(atom.id)) node.classList.add("merge");
+
+          if (state.spawnedId === atom.id) node.classList.add("spawn");
+
+          node.style.setProperty("--x", `${p.x}px`);
+          node.style.setProperty("--y", `${p.y}px`);
+          node.addEventListener("click", () => extractAtom(index));
+
+          node.style.setProperty("--atom-color", atomColor(atom.value));
+
+          node.innerHTML = `<span>${atom.value}</span>
+               <small>${atomLabel(atom.value)}</small>`;
+
+          board.appendChild(node);
+        });
+
+        for (let i = 0; i < total; i++) {
+          const p = pointOnRing(i + 0.5, total, slotRadius);
+
+          const slot = document.createElement("button");
+
+          slot.type = "button";
+          slot.className = "slot";
+
+          slot.style.setProperty("--x", `${p.x}px`);
+          slot.style.setProperty("--y", `${p.y}px`);
+
+          slot.disabled = state.locked;
+
+          slot.addEventListener("click", () => placeAt(i + 1));
+
+          board.appendChild(slot);
+        }
+      }
+
+      function paintAtom(node, value) {
+        node.className = "next-atom";
+
+        if (value === "+") node.classList.add("plus");
+        if (value === "-") node.classList.add("minus");
+
+        node.style.setProperty("--atom-color", atomColor(value));
+        node.textContent = atomLabel(value);
+      }
+
+      function pointOnRing(index, total, r) {
+        const a = (index / total) * Math.PI * 2 - Math.PI / 2;
+        return {
+          x: Math.cos(a) * r,
+          y: Math.sin(a) * r,
+        };
+      }
+
+      // =========================================================
+      // MINUS & EXTRACT MECHANIC
+      // =========================================================
+
+      // Tap center atom to convert to '+' if it was extracted
+      nextAtomEl.addEventListener("click", () => {
+        if (state.extracted && !state.locked) {
+          state.next = "+";
+          state.extracted = false;
+          showToast("Converted to Plus!");
+          render();
+        }
+      });
+
+      function extractAtom(index) {
+        if (state.locked || state.next !== "-") return;
+
+        state.locked = true;
+
+        const absorbedAtom = state.atoms.splice(index, 1)[0];
+        state.next = absorbedAtom.value;
+        state.score += 25;
+        state.extracted = true; // Set flag to allow converting to '+'
+
+        showToast(
+          `Extracted ${atomLabel(absorbedAtom.value)}! Tap center to convert to +`,
+        );
+
+        state.locked = false;
+        render();
+      }
+
+      minusButton.addEventListener("click", () => {
+        if (state.locked || state.minus <= 0 || state.atoms.length <= 0) return;
+
+        if (state.next === "-") {
+          // If already active, cancel it (don't refund if it wasn't spent yet, but here we decrement immediately)
+          // To keep it simple: just charge and activate if not active.
+          return;
+        }
+
+        state.minus--;
+        state.next = "-";
+        state.extracted = false;
+        showToast("Minus active! Tap an atom to absorb.");
+        render();
+      });
+
+      /* ================================
+               PLACE ATOM (Player Turn)
+            ================================ */
+      async function placeAt(index) {
+        if (state.locked || state.next === "-") return;
+
+        state.locked = true;
+        state.extracted = false; // Reset extraction state on place
+
+        const newAtom = {
+          id: state.nextId++,
+          value: state.next,
+        };
+
+        state.atoms.splice(index, 0, newAtom);
+        state.spawnedId = newAtom.id;
+
+        render();
+        await sleep(MOVE_TIME);
+        state.spawnedId = null;
+
+        const newIndex = state.atoms.findIndex((a) => a.id === newAtom.id);
+        await resolveBoard(newIndex);
+
+        state.next = drawNextAtom();
+        finishTurn();
+      }
+
+      /* =========================================================
+               MERGE SYSTEM
+               ========================================================= */
+
+      async function resolveBoard(startIndex) {
+        let index = normalizeIndex(startIndex);
+        let merge = plusPatternAt(index) || findAnyPlusMerge();
+
+        while (merge) {
+          index = await applyMerge(merge);
+          merge = chainPatternAt(index);
+        }
+
+        return index;
+      }
+
+      function findAnyPlusMerge() {
+        for (let i = 0; i < state.atoms.length; i++) {
+          const m = plusPatternAt(i);
+          if (m) return m;
+        }
+        return null;
+      }
+
+      function plusPatternAt(p) {
+        if (state.atoms.length < 3) return null;
+        if (state.atoms[p]?.value !== "+") return null;
+
+        const left = normalizeIndex(p - 1);
+        const right = normalizeIndex(p + 1);
+
+        const lv = state.atoms[left].value;
+        const rv = state.atoms[right].value;
+
+        if (typeof lv !== "number" || lv !== rv) return null;
+
+        return {
+          ids: new Set([
+            state.atoms[left].id,
+            state.atoms[p].id,
+            state.atoms[right].id,
+          ]),
+          newValue: lv + 1,
+          anchorId: state.atoms[p].id,
+        };
+      }
+
+      function chainPatternAt(p) {
+        if (state.atoms.length < 3) return null;
+
+        const left = normalizeIndex(p - 1);
+        const right = normalizeIndex(p + 1);
+
+        const lv = state.atoms[left].value;
+        const rv = state.atoms[right].value;
+
+        if (typeof lv !== "number" || lv !== rv) return null;
+
+        const centerVal = state.atoms[p].value;
+        const newValue = (typeof centerVal === "number" ? centerVal : lv) + 1;
+
+        return {
+          ids: new Set([
+            state.atoms[left].id,
+            state.atoms[p].id,
+            state.atoms[right].id,
+          ]),
+          newValue: newValue,
+          anchorId: state.atoms[p].id,
+        };
+      }
+
+      async function applyMerge(merge) {
+        state.mergingIds = merge.ids;
+        state.score += merge.ids.size * merge.newValue * 10;
+
+        // Reward powerups occasionally
+        if (merge.newValue % 10 === 0) state.minus++;
+        else if (merge.newValue % 5 === 0) state.shuffle++;
+
+        render();
+        await sleep(FUSE_TIME);
+
+        const merged = {
+          id: state.nextId++,
+          value: merge.newValue,
+        };
+
+        const nextAtoms = [];
+
+        for (const atom of state.atoms) {
+          if (atom.id === merge.anchorId) {
+            nextAtoms.push(merged);
+          } else if (!merge.ids.has(atom.id)) {
+            nextAtoms.push(atom);
+          }
+        }
+
+        state.atoms = nextAtoms;
+        state.mergingIds = new Set();
+        state.spawnedId = merged.id;
+
+        render();
+        await sleep(MOVE_TIME);
+
+        state.spawnedId = null;
+        return state.atoms.findIndex((a) => a.id === merged.id);
+      }
+
+      /* =========================================================
+               GAME END / TURN END
+               ========================================================= */
+
+      function finishTurn() {
+        if (state.score > state.best) {
+          state.best = state.score;
+          localStorage.setItem("atom-ring-best", String(state.best));
+        }
+
+        if (state.atoms.length > MAX_ATOMS) {
+          showToast("Reactor full. New run started.");
+          const best = state.best;
+          boot();
+          state.best = best;
+          render();
+          return;
+        }
+
+        state.locked = false;
+        render();
+      }
+
+      function normalizeIndex(i) {
+        const l = state.atoms.length;
+        return ((i % l) + l) % l;
+      }
+
+      function sleep(ms) {
+        return new Promise((r) => setTimeout(r, ms));
+      }
+
+      function showToast(msg) {
+        clearTimeout(toastTimer);
+        toastEl.textContent = msg;
+        toastEl.classList.add("show");
+        toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1800);
+      }
+
+      shuffleButton.addEventListener("click", async () => {
+        if (state.locked || state.shuffle <= 0 || state.atoms.length < 3)
+          return;
+
+        state.locked = true;
+        state.shuffle--;
+
+        state.atoms = state.atoms
+          .map((a) => [Math.random(), a])
+          .sort((a, b) => a[0] - b[0])
+          .map((x) => x[1]);
+
+        render();
+        await sleep(MOVE_TIME);
+
+        state.locked = false;
+        render();
+      });
+
+      $("#restartButton").addEventListener("click", boot);
+      window.addEventListener("resize", render);
+
+      boot();
+    </script>
+  </body>
+</html>
